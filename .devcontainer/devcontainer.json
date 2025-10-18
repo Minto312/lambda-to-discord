@@ -1,0 +1,27 @@
+{
+    "name": "lambda-to-discord",
+    "runArgs": ["--name=lambda-to-discord"],
+    "image": "mcr.microsoft.com/devcontainers/base:debian",
+    "shutdownAction": "stopContainer",
+    "remoteUser": "vscode",
+    "features": {
+        "ghcr.io/jsburckhardt/devcontainer-features/codex:1": {},
+        "ghcr.io/devcontainers/features/go:1": {
+            "version": "latest"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "settings": {
+            },
+            "extensions": [
+                "mhutchie.git-graph",
+                "github.vscode-pull-request-github",
+                "streetsidesoftware.code-spell-checker",
+                "openai.chatgpt",
+
+                "golang.go"
+            ]
+        }
+    }
+}
