@@ -5,12 +5,13 @@ Go 実装とテストが含まれています。
 
 ## 使い方
 
-1. `DISCORD_WEBHOOK_URL` 環境変数に Discord Webhook の URL を設定します。
-2. Lambda に渡すイベントは以下のような JSON オブジェクトで、`content` または
+1. Lambda に渡すイベントは以下のような JSON オブジェクトで、`webhookURL` に
+   Discord Webhook の URL を指定し、`content` または
    `message` を含めてください。
 
 ```json
 {
+  "webhookURL": "https://discord.com/api/webhooks/...",
   "content": "通知本文",
   "username": "任意の表示名",
   "avatar_url": "任意のアイコン URL",
@@ -39,5 +40,4 @@ zip function.zip bootstrap
 go test ./...
 ```
 
-`DISCORD_WEBHOOK_URL` が設定されていない場合、ハンドラーは実行時にエラーを返します。
-本番環境では必ず設定してください。
+`webhookURL` が指定されていない場合、ハンドラーは実行時にエラーを返します。

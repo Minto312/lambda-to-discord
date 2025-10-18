@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 )
@@ -152,9 +151,10 @@ func TestHandleRequestSuccess(t *testing.T) {
 	defaultHTTPClient = stub
 	t.Cleanup(func() { defaultHTTPClient = oldClient })
 
-	t.Setenv(webhookEnvVar, "http://example.com")
-
-	event := map[string]any{"content": "hello"}
+	event := map[string]any{
+		"content":    "hello",
+		"webhookURL": "http://example.com",
+	}
 	raw, _ := json.Marshal(event)
 
 	resp, err := HandleRequest(context.Background(), raw)
@@ -166,18 +166,33 @@ func TestHandleRequestSuccess(t *testing.T) {
 	}
 }
 
-func TestHandleRequestMissingEnv(t *testing.T) {
-	os.Unsetenv(webhookEnvVar)
+func TestHandleRequestMissingWebhookURL(t *testing.T) {
 	_, err := HandleRequest(context.Background(), json.RawMessage(`{"content":"hi"}`))
 	if err == nil {
-		t.Fatal("expected error when env missing")
+		t.Fatal("expected error when webhookURL missing")
 	}
 }
 
 func TestHandleRequestInvalidEvent(t *testing.T) {
-	t.Setenv(webhookEnvVar, "http://example.com")
 	_, err := HandleRequest(context.Background(), json.RawMessage(`123`))
 	if err == nil {
 		t.Fatal("expected error for invalid event")
+	}
+}
+
+func TestExtractWebhookURLVariants(t *testing.T) {
+	cases := []map[string]any{
+		{"webhookURL": "http://example.com"},
+		{"webhook_url": "http://example.com"},
+	}
+
+	for _, event := range cases {
+		url, err := extractWebhookURL(event)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if url != "http://example.com" {
+			t.Fatalf("unexpected url: %s", url)
+		}
 	}
 }

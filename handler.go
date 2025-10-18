@@ -8,12 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
-
-const webhookEnvVar = "DISCORD_WEBHOOK_URL"
 
 var defaultHTTPClient httpClient = &http.Client{Timeout: 10 * time.Second}
 
@@ -48,12 +45,12 @@ func (e *WebhookError) Unwrap() error {
 
 // HandleRequest is the Lambda entrypoint.
 func HandleRequest(ctx context.Context, event json.RawMessage) (Response, error) {
-	webhookURL := strings.TrimSpace(os.Getenv(webhookEnvVar))
-	if webhookURL == "" {
-		return Response{}, fmt.Errorf("environment variable %q is required", webhookEnvVar)
+	eventMap, err := normaliseEvent(event)
+	if err != nil {
+		return Response{}, err
 	}
 
-	eventMap, err := normaliseEvent(event)
+	webhookURL, err := extractWebhookURL(eventMap)
 	if err != nil {
 		return Response{}, err
 	}
@@ -141,6 +138,18 @@ func buildDiscordPayload(event map[string]any) (map[string]any, error) {
 	}
 
 	return payload, nil
+}
+
+func extractWebhookURL(event map[string]any) (string, error) {
+	for _, key := range []string{"webhookURL", "webhook_url"} {
+		if value, ok := event[key]; ok {
+			if str := strings.TrimSpace(fmt.Sprint(value)); str != "" {
+				return str, nil
+			}
+		}
+	}
+
+	return "", errors.New("event must contain a 'webhookURL' or 'webhook_url'")
 }
 
 func sendDiscordMessage(
