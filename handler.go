@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
 
 var defaultHTTPClient httpClient = &http.Client{Timeout: 10 * time.Second}
+
+const errorWebhookEnvVar = "ERROR_WEBHOOK_URL"
 
 type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -47,21 +50,25 @@ func (e *WebhookError) Unwrap() error {
 func HandleRequest(ctx context.Context, event json.RawMessage) (Response, error) {
 	eventMap, err := normaliseEvent(event)
 	if err != nil {
+		notifyProcessingError(ctx, defaultHTTPClient, event, nil, err)
 		return Response{}, err
 	}
 
 	webhookURL, err := extractWebhookURL(eventMap)
 	if err != nil {
+		notifyProcessingError(ctx, defaultHTTPClient, event, eventMap, err)
 		return Response{}, err
 	}
 
 	payload, err := buildDiscordPayload(eventMap)
 	if err != nil {
+		notifyProcessingError(ctx, defaultHTTPClient, event, eventMap, err)
 		return Response{}, err
 	}
 
 	status, body, err := sendDiscordMessage(ctx, defaultHTTPClient, webhookURL, payload)
 	if err != nil {
+		notifyProcessingError(ctx, defaultHTTPClient, event, eventMap, err)
 		return Response{}, err
 	}
 
@@ -185,4 +192,73 @@ func sendDiscordMessage(
 	}
 
 	return resp.StatusCode, string(respBody), nil
+}
+
+func notifyProcessingError(
+	ctx context.Context,
+	client httpClient,
+	rawEvent json.RawMessage,
+	event map[string]any,
+	procErr error,
+) {
+	if procErr == nil {
+		return
+	}
+
+	webhookURL := strings.TrimSpace(os.Getenv(errorWebhookEnvVar))
+	if webhookURL == "" {
+		return
+	}
+
+	payload := buildErrorNotificationPayload(rawEvent, event, procErr)
+
+	if client == nil {
+		client = defaultHTTPClient
+	}
+
+	_, _, _ = sendDiscordMessage(ctx, client, webhookURL, payload)
+}
+
+func buildErrorNotificationPayload(rawEvent json.RawMessage, event map[string]any, procErr error) map[string]any {
+	payload := map[string]any{
+		"content": fmt.Sprintf("Failed to process request: %v", procErr),
+	}
+
+	if description := formatRequestForNotification(rawEvent, event); description != "" {
+		payload["embeds"] = []map[string]string{
+			{
+				"title":       "Request",
+				"description": description,
+			},
+		}
+	}
+
+	return payload
+}
+
+func formatRequestForNotification(rawEvent json.RawMessage, event map[string]any) string {
+	if event != nil {
+		if b, err := json.MarshalIndent(event, "", "  "); err == nil {
+			return wrapAsJSONCodeBlock(b)
+		}
+	}
+
+	trimmed := bytes.TrimSpace(rawEvent)
+	if len(trimmed) == 0 {
+		return ""
+	}
+
+	if json.Valid(trimmed) {
+		var buf bytes.Buffer
+		if err := json.Indent(&buf, trimmed, "", "  "); err == nil {
+			return wrapAsJSONCodeBlock(buf.Bytes())
+		}
+		return wrapAsJSONCodeBlock(trimmed)
+	}
+
+	return fmt.Sprintf("```\n%s\n```", string(trimmed))
+}
+
+func wrapAsJSONCodeBlock(data []byte) string {
+	return fmt.Sprintf("```json\n%s\n```", string(data))
 }

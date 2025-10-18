@@ -180,6 +180,46 @@ func TestHandleRequestInvalidEvent(t *testing.T) {
 	}
 }
 
+func TestHandleRequestNotifiesOnError(t *testing.T) {
+	oldClient := defaultHTTPClient
+	stub := &stubHTTPClient{
+		resp: &http.Response{
+			StatusCode: http.StatusNoContent,
+			Body:       io.NopCloser(strings.NewReader("")),
+		},
+	}
+	defaultHTTPClient = stub
+	t.Cleanup(func() { defaultHTTPClient = oldClient })
+
+	t.Setenv(errorWebhookEnvVar, "http://example.com/error")
+
+	_, err := HandleRequest(context.Background(), json.RawMessage(`123`))
+	if err == nil {
+		t.Fatal("expected error for invalid event")
+	}
+
+	if stub.req == nil {
+		t.Fatal("expected error notification request to be sent")
+	}
+	if stub.req.URL.String() != "http://example.com/error" {
+		t.Fatalf("unexpected error webhook url: %s", stub.req.URL.String())
+	}
+	body, readErr := io.ReadAll(stub.req.Body)
+	if readErr != nil {
+		t.Fatalf("failed to read request body: %v", readErr)
+	}
+	if cerr := stub.req.Body.Close(); cerr != nil {
+		t.Fatalf("failed to close request body: %v", cerr)
+	}
+	payload := string(body)
+	if !strings.Contains(payload, "Failed to process request") {
+		t.Fatalf("expected error message in payload: %s", payload)
+	}
+	if !strings.Contains(payload, "123") {
+		t.Fatalf("expected request payload to be included: %s", payload)
+	}
+}
+
 func TestExtractWebhookURLVariants(t *testing.T) {
 	cases := []map[string]any{
 		{"webhookURL": "http://example.com"},
