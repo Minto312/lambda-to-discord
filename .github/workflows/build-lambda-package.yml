@@ -1,13 +1,12 @@
-name: Build Lambda Package
+name: Release Lambda Package
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    tags:
+      - 'v*'
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
@@ -32,9 +31,10 @@ jobs:
       - name: Package Lambda artifact
         run: zip function.zip bootstrap
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: lambda-function
-          path: function.zip
-          if-no-files-found: error
+          files: function.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
