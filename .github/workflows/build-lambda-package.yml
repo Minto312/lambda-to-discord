@@ -24,11 +24,11 @@ jobs:
       - name: Run tests
         run: make test
 
-      - name: Build amd64 package
+      - name: Build x86_64 package
         run: |
           make clean
-          CGO_ENABLED=0 make package-amd64
-          mv function.zip function-amd64.zip
+          CGO_ENABLED=0 make package-x86_64
+          mv function.zip function-x86_64.zip
           rm -f bootstrap
 
       - name: Build arm64 package
@@ -42,7 +42,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            function-amd64.zip
+            function-x86_64.zip
             function-arm64.zip
           generate_release_notes: true
         env:

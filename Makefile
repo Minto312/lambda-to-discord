@@ -25,15 +25,15 @@ package: build
 	zip $(FUNCTION_ZIP) $(BINARY_NAME)
 	@echo "Package created: $(FUNCTION_ZIP)"
 
-.PHONY: build-amd64 build-arm64 package-amd64 package-arm64
-build-amd64: GOARCH := amd64
-build-amd64: build
+.PHONY: build-x86_64 build-arm64 package-x86_64 package-arm64
+build-x86_64: GOARCH := amd64
+build-x86_64: build
 
 build-arm64: GOARCH := arm64
 build-arm64: build
 
-package-amd64: GOARCH := amd64
-package-amd64: package
+package-x86_64: GOARCH := amd64
+package-x86_64: package
 
 package-arm64: GOARCH := arm64
 package-arm64: package

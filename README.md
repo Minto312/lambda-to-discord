@@ -45,8 +45,8 @@ CloudWatch Alarm から SNS 経由で Lambda に届くメッセージ (raw messa
 Go ランタイムを利用するため、Linux 向けにビルドしたバイナリをアップロードします。エントリーポイントは `lambda` ビルドタグの下に配置しているため、ビルド時にタグを指定します。
 
 ```bash
-make build-amd64
-make package-amd64
+make build-x86_64
+make package-x86_64
 ```
 
 Arm64 (Graviton) ランタイム向けのバイナリを生成する場合は以下のターゲットを利用してください。
