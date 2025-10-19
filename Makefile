@@ -5,7 +5,7 @@ BINARY_NAME := bootstrap
 FUNCTION_ZIP := function.zip
 BUILD_TAGS := lambda
 GOOS := linux
-GOARCH := amd64
+GOARCH ?= amd64
 
 # Default target
 .PHONY: all
@@ -14,16 +14,29 @@ all: build
 # Build the Lambda function binary
 .PHONY: build
 build:
-	@echo "Building Lambda function..."
+	@echo "Building Lambda function for $(GOOS)/$(GOARCH)..."
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -tags $(BUILD_TAGS) -o $(BINARY_NAME)
 	@echo "Build completed: $(BINARY_NAME)"
 
 # Create deployment package
 .PHONY: package
 package: build
-	@echo "Creating deployment package..."
+	@echo "Creating deployment package for $(GOOS)/$(GOARCH)..."
 	zip $(FUNCTION_ZIP) $(BINARY_NAME)
 	@echo "Package created: $(FUNCTION_ZIP)"
+
+.PHONY: build-amd64 build-arm64 package-amd64 package-arm64
+build-amd64: GOARCH := amd64
+build-amd64: build
+
+build-arm64: GOARCH := arm64
+build-arm64: build
+
+package-amd64: GOARCH := amd64
+package-amd64: package
+
+package-arm64: GOARCH := arm64
+package-arm64: package
 
 # Run tests
 .PHONY: test

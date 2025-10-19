@@ -45,8 +45,22 @@ CloudWatch Alarm から SNS 経由で Lambda に届くメッセージ (raw messa
 Go ランタイムを利用するため、Linux 向けにビルドしたバイナリをアップロードします。エントリーポイントは `lambda` ビルドタグの下に配置しているため、ビルド時にタグを指定します。
 
 ```bash
-GOOS=linux GOARCH=amd64 go build -tags lambda -o bootstrap
-zip function.zip bootstrap
+make build-amd64
+make package-amd64
+```
+
+Arm64 (Graviton) ランタイム向けのバイナリを生成する場合は以下のターゲットを利用してください。
+
+```bash
+make build-arm64
+make package-arm64
+```
+
+あるいは、任意のアーキテクチャでビルドしたい場合は `GOARCH` 変数を指定して `make build`/`make package` を実行できます。
+
+```bash
+make build GOARCH=arm64
+make package GOARCH=arm64
 ```
 
 デプロイ後、Lambda 関数に `ADAPTER_TYPE` および必要な Webhook URL 系の環境変数を設定し、`cloudwatch` と `direct` のエイリアスを付与してそれぞれのトリガーに割り当ててください。
