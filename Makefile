@@ -5,7 +5,10 @@ BINARY_NAME := bootstrap
 FUNCTION_ZIP := function.zip
 BUILD_TAGS := lambda
 GOOS := linux
-GOARCH := amd64
+GOARCH ?= amd64
+ARM64_GOARCH := arm64
+ARM64_BINARY_NAME := $(BINARY_NAME)-arm64
+ARM64_FUNCTION_ZIP := function-arm64.zip
 
 # Default target
 .PHONY: all
@@ -18,12 +21,27 @@ build:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -tags $(BUILD_TAGS) -o $(BINARY_NAME)
 	@echo "Build completed: $(BINARY_NAME)"
 
+.PHONY: build-arm64
+build-arm64:
+	@echo "Building Lambda function for ARM64..."
+	GOOS=$(GOOS) GOARCH=$(ARM64_GOARCH) go build -tags $(BUILD_TAGS) -o $(ARM64_BINARY_NAME)
+	@echo "Build completed: $(ARM64_BINARY_NAME)"
+
 # Create deployment package
 .PHONY: package
 package: build
 	@echo "Creating deployment package..."
 	zip $(FUNCTION_ZIP) $(BINARY_NAME)
 	@echo "Package created: $(FUNCTION_ZIP)"
+
+.PHONY: package-arm64
+package-arm64: build-arm64
+	@echo "Creating ARM64 deployment package..."
+	@tmp_dir=$$(mktemp -d); \
+		cp $(ARM64_BINARY_NAME) $$tmp_dir/$(BINARY_NAME); \
+		(cd $$tmp_dir && zip $(CURDIR)/$(ARM64_FUNCTION_ZIP) $(BINARY_NAME)); \
+		rm -rf $$tmp_dir
+	@echo "Package created: $(ARM64_FUNCTION_ZIP)"
 
 # Run tests
 .PHONY: test
@@ -47,7 +65,7 @@ test-coverage:
 .PHONY: clean
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -f $(BINARY_NAME) $(FUNCTION_ZIP)
+	rm -f $(BINARY_NAME) $(ARM64_BINARY_NAME) $(FUNCTION_ZIP) $(ARM64_FUNCTION_ZIP)
 	@echo "Clean completed"
 
 # Format code
@@ -88,18 +106,20 @@ deps:
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  build        - Build the Lambda function binary"
-	@echo "  package      - Create deployment package (function.zip)"
-	@echo "  test         - Run tests"
-	@echo "  test-verbose - Run tests with verbose output"
-	@echo "  test-coverage- Run tests with coverage"
-	@echo "  clean        - Clean build artifacts"
-	@echo "  fmt          - Format code"
-	@echo "  lint         - Run linter (requires golangci-lint)"
-	@echo "  vet          - Run go vet"
-	@echo "  check        - Run all code quality checks (fmt + vet + lint)"
-	@echo "  deps         - Install dependencies"
-	@echo "  help         - Show this help message"
+	@echo "  build         - Build the Lambda function binary"
+	@echo "  build-arm64   - Build the Lambda function binary for ARM64"
+	@echo "  package       - Create deployment package (function.zip)"
+	@echo "  package-arm64 - Create ARM64 deployment package (function-arm64.zip)"
+	@echo "  test          - Run tests"
+	@echo "  test-verbose  - Run tests with verbose output"
+	@echo "  test-coverage - Run tests with coverage"
+	@echo "  clean         - Clean build artifacts"
+	@echo "  fmt           - Format code"
+	@echo "  lint          - Run linter (requires golangci-lint)"
+	@echo "  vet           - Run go vet"
+	@echo "  check         - Run all code quality checks (fmt + vet + lint)"
+	@echo "  deps          - Install dependencies"
+	@echo "  help          - Show this help message"
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  DISCORD_WEBHOOK_URL - Discord webhook URL (required for testing)"

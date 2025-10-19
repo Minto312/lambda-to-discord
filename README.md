@@ -45,9 +45,18 @@ CloudWatch Alarm から SNS 経由で Lambda に届くメッセージ (raw messa
 Go ランタイムを利用するため、Linux 向けにビルドしたバイナリをアップロードします。エントリーポイントは `lambda` ビルドタグの下に配置しているため、ビルド時にタグを指定します。
 
 ```bash
+# x86_64 (AMD64) アーキテクチャでのビルド
 GOOS=linux GOARCH=amd64 go build -tags lambda -o bootstrap
 zip function.zip bootstrap
+
+# ARM64 (Graviton) アーキテクチャでのビルド
+GOOS=linux GOARCH=arm64 go build -tags lambda -o bootstrap-arm64
+cp bootstrap-arm64 bootstrap  # パッケージ内の実行ファイル名は bootstrap 固定
+zip function-arm64.zip bootstrap
+rm bootstrap
 ```
+
+`make build` および `make package` を利用すると、x86_64 (AMD64) 向けのバイナリおよびデプロイパッケージを生成できます。`make build-arm64` および `make package-arm64` を利用すると、ARM64 向けのバイナリおよびデプロイパッケージを生成できます。どちらの場合も、パッケージ内の実行ファイル名は自動的に `bootstrap` にリネームされます。
 
 デプロイ後、Lambda 関数に `ADAPTER_TYPE` および必要な Webhook URL 系の環境変数を設定し、`cloudwatch` と `direct` のエイリアスを付与してそれぞれのトリガーに割り当ててください。
 
