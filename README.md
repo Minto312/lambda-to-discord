@@ -11,6 +11,14 @@
 - Lambda デプロイ時に環境変数 `ADAPTER_TYPE` を `cloudwatch` または `direct` に設定することで、起動時に利用するアダプタを切り替えます。
 - CloudWatch 系統では追加で環境変数 `WEBHOOK_URL` に送信先 Discord Webhook を設定してください。Direct 系統ではイベント内の `webhookURL` で送信先を指定します (未指定の場合は `WEBHOOK_URL` が利用されます)。
 
+## 環境変数
+
+| 変数名 | 必須 | 役割 | 備考 |
+| --- | --- | --- | --- |
+| `ADAPTER_TYPE` | ✅ | 起動時に使用するアダプタを `cloudwatch` または `direct` から選択します。 | 未設定または値が空の場合はエラーとして扱われ、実行が中断されます。 |
+| `WEBHOOK_URL` | `cloudwatch` では ✅<br>`direct` では 任意 | CloudWatch/SNS 系統で利用する送信先 Webhook URL。Direct 系統ではイベント内に URL がない場合のフォールバックとして使用されます。 | 値は前後の空白が除去されて利用されます。 |
+| `ERROR_WEBHOOK_URL` | 任意 | リクエスト処理中にエラーが発生した際、詳細付きの通知を送信する Webhook URL。 | 未設定の場合はエラー通知を送信しません。 |
+
 ## イベント形式
 
 ### Direct アダプタ
