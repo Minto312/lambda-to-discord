@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"lambda-to-discord/domain"
@@ -24,7 +25,11 @@ func (DirectAdapter) Transform(event json.RawMessage) (domain.NotificationPayloa
 
 	webhookURL, err := extractWebhookURL(eventMap)
 	if err != nil {
-		return domain.NotificationPayload{}, eventMap, err
+		fallback := strings.TrimSpace(os.Getenv("WEBHOOK_URL"))
+		if fallback == "" {
+			return domain.NotificationPayload{}, eventMap, err
+		}
+		webhookURL = fallback
 	}
 
 	content := extractFirstNonEmpty(eventMap, "content", "message")
