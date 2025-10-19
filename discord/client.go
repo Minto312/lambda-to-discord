@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -54,11 +55,18 @@ func Send(ctx context.Context, client HTTPClient, payload domain.NotificationPay
 	if err != nil {
 		return 0, "", &WebhookError{Err: err}
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to read response: %w", err)
+	respBody, readErr := io.ReadAll(resp.Body)
+	closeErr := resp.Body.Close()
+	if readErr != nil {
+		if closeErr != nil {
+			readErr = errors.Join(readErr, fmt.Errorf("failed to close response body: %w", closeErr))
+		}
+		return 0, "", fmt.Errorf("failed to read response: %w", readErr)
+	}
+
+	if closeErr != nil {
+		return 0, "", fmt.Errorf("failed to close response body: %w", closeErr)
 	}
 
 	return resp.StatusCode, string(respBody), nil

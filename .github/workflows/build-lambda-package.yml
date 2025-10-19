@@ -22,22 +22,28 @@ jobs:
           go-version: '1.21'
 
       - name: Run tests
-        run: go test ./...
+        run: make test
 
-      - name: Build Lambda binary
-        env:
-          GOOS: linux
-          GOARCH: amd64
-          CGO_ENABLED: 0
-        run: go build -tags lambda -o bootstrap
+      - name: Build x86_64 package
+        run: |
+          make clean
+          CGO_ENABLED=0 make package-x86_64
+          mv function.zip function-x86_64.zip
+          rm -f bootstrap
 
-      - name: Package Lambda artifact
-        run: zip function.zip bootstrap
+      - name: Build arm64 package
+        run: |
+          make clean
+          CGO_ENABLED=0 make package-arm64
+          mv function.zip function-arm64.zip
+          rm -f bootstrap
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: function.zip
+          files: |
+            function-x86_64.zip
+            function-arm64.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
