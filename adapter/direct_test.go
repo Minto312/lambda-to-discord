@@ -50,6 +50,22 @@ func TestDirectAdapterTransformAllowsMessageFallback(t *testing.T) {
 	}
 }
 
+func TestDirectAdapterTransformUsesEnvFallback(t *testing.T) {
+	t.Setenv("WEBHOOK_URL", "https://discord.example/fallback")
+
+	raw := json.RawMessage(`{"content": "env"}`)
+	payload, _, err := NewDirectAdapter().Transform(raw)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if payload.WebhookURL != "https://discord.example/fallback" {
+		t.Fatalf("expected webhook to fall back to env var, got %s", payload.WebhookURL)
+	}
+	if payload.Content != "env" {
+		t.Fatalf("unexpected content: %s", payload.Content)
+	}
+}
+
 func TestDirectAdapterTransformError(t *testing.T) {
 	if _, _, err := NewDirectAdapter().Transform(json.RawMessage(`{"content":"missing webhook"}`)); err == nil {
 		t.Fatal("expected error when webhook missing")

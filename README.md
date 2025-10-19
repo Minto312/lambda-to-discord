@@ -9,13 +9,13 @@
   - `direct.go`: 任意の JSON ペイロードを直接変換します。
 - `domain/notification.go` に通知ドメインモデルを定義し、`discord/client.go` で送信ロジックを一元管理しています。
 - Lambda デプロイ時に環境変数 `ADAPTER_TYPE` を `cloudwatch` または `direct` に設定することで、起動時に利用するアダプタを切り替えます。
-- CloudWatch 系統では追加で環境変数 `WEBHOOK_URL` に送信先 Discord Webhook を設定してください。Direct 系統ではイベント内の `webhookURL` で送信先を指定します。
+- CloudWatch 系統では追加で環境変数 `WEBHOOK_URL` に送信先 Discord Webhook を設定してください。Direct 系統ではイベント内の `webhookURL` で送信先を指定します (未指定の場合は `WEBHOOK_URL` が利用されます)。
 
 ## イベント形式
 
 ### Direct アダプタ
 
-Lambda に渡すイベントは以下のような JSON オブジェクトです。`content` または `message` のいずれかを含め、`webhookURL` (または `webhook_url`) に送信先を指定します。
+Lambda に渡すイベントは以下のような JSON オブジェクトです。`content` または `message` のいずれかを含め、`webhookURL` (または `webhook_url`) に送信先を指定します。イベント内で送信先が指定されていない場合は、環境変数 `WEBHOOK_URL` がフォールバックとして使用されます。
 
 ```json
 {
